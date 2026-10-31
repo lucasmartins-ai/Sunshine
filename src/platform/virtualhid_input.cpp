@@ -688,7 +688,53 @@ namespace platf::virtualhid {
            configured_gamepad == "ds4"sv;
   }
 
+  namespace {
+
+    /**
+     * @brief Find the keymap gamepad in a slot.
+     *
+     * @param context Input context that owns the gamepads.
+     * @param nr Global gamepad index.
+     * @return Keymap gamepad, or null when the slot holds none.
+     */
+    std::optional<keymap::mapper_t> *keymap_gamepad(input_context_t &context, int nr) {
+      if (nr < 0 || nr >= MAX_GAMEPADS || !context.keymap_gamepads[nr]) {
+        return nullptr;
+      }
+      return &context.keymap_gamepads[nr];
+    }
+
+    /**
+     * @brief Press and release keys through the shared virtual keyboard.
+     * @details A key goes down when the first keymap gamepad holds it and up when the last one lets go.
+     *
+     * @param context Input context that owns the keyboard.
+     * @param events Key events produced by one keymap gamepad.
+     */
+    void send_keys(input_context_t &context, const std::vector<keymap::key_event_t> &events) {
+      for (const auto &event : events) {
+        auto &owners = context.keymap_key_owners[event.key_code & 0xFF];
+        if (!event.release && owners++ == 0) {
+          keyboard_update(context, event.key_code, false, 0);
+        } else if (event.release && owners > 0 && --owners == 0) {
+          keyboard_update(context, event.key_code, true, 0);
+        }
+      }
+    }
+
+  }  // namespace
+
   int alloc_gamepad(input_context_t &context, const gamepad_id_t &id, const gamepad_arrival_t &metadata, feedback_queue_t feedback_queue) {
+    if (config::input.gamepad_driver == config::GAMEPAD_DRIVER_KEYMAP) {
+      if (id.globalIndex < 0 || id.globalIndex >= MAX_GAMEPADS) {
+        BOOST_LOG(warning) << "Invalid keymap gamepad index: "sv << id.globalIndex;
+        return -1;
+      }
+      // ponytail: config parsing already rejected a bad keymap, so the default is only a guard
+      context.keymap_gamepads[id.globalIndex].emplace(keymap::parse_keymap(keymap::active_keymap_spec(config::input.gamepad_keymap)).value_or(keymap::default_keymap()));
+      BOOST_LOG(info) << "Gamepad "sv << id.globalIndex << " will be translated into keyboard keys"sv;
+      return 0;
+    }
     if (!context.runtime || !context.runtime->capabilities().supports_gamepad) {
       return -1;
     }
@@ -738,6 +784,9 @@ namespace platf::virtualhid {
   }
 
   int rebind_gamepad(input_context_t &context, const gamepad_id_t &id, feedback_queue_t feedback_queue) {
+    if (keymap_gamepad(context, id.globalIndex)) {
+      return 0;
+    }
     if (!has_gamepad(context, id.globalIndex)) {
       return -1;
     }
@@ -770,12 +819,21 @@ namespace platf::virtualhid {
 #endif
 
   void free_gamepad(input_context_t &context, int nr) {
+    if (const auto gamepad = keymap_gamepad(context, nr)) {
+      send_keys(context, (*gamepad)->release_all());
+      gamepad->reset();
+      return;
+    }
     if (has_gamepad(context, nr)) {
       context.gamepads[nr].reset();
     }
   }
 
   void gamepad_update(input_context_t &context, int nr, const gamepad_state_t &state) {
+    if (const auto gamepad = keymap_gamepad(context, nr)) {
+      send_keys(context, (*gamepad)->update(state));
+      return;
+    }
     if (!has_gamepad(context, nr)) {
       return;
     }

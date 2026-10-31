@@ -27,6 +27,7 @@
 #include "logging.h"
 #include "nvhttp.h"
 #include "platform/common.h"
+#include "platform/gamepad_keymap.h"
 #include "rtsp.h"
 #include "utility.h"
 
@@ -875,6 +876,7 @@ namespace config {
 
     "auto",  // Default gamepad profile.
     {},  // Windows requests a backend choice; macOS defaults to Virtual HID Broker.
+    {},  // gamepad_keymap: default bindings
     true,  // back as touchpad click enabled for PlayStation-style gamepads
     true,  // client gamepads with motion events use PlayStation-style emulation
     true,  // client gamepads with touchpads use PlayStation-style emulation
@@ -1863,7 +1865,15 @@ namespace config {
                                                                         GAMEPAD_DRIVER_VIRTUALHID,
                                                                         GAMEPAD_DRIVER_VIGEMBUS,
                                                                         GAMEPAD_DRIVER_NONE,
+#ifndef _WIN32
+                                                                        GAMEPAD_DRIVER_KEYMAP,
+#endif
                                                                       });
+    string_f(vars, "gamepad_keymap", input.gamepad_keymap);
+    if (!platf::keymap::parse_keymap(input.gamepad_keymap)) {
+      BOOST_LOG(warning) << "Invalid gamepad_keymap '"sv << input.gamepad_keymap << "'; using the default bindings"sv;
+      input.gamepad_keymap.clear();
+    }
     string_restricted_f(vars, "gamepad"s, input.gamepad, get_supported_gamepad_options());
 #ifdef _WIN32
     if (input.gamepad_driver == GAMEPAD_DRIVER_VIGEMBUS && input.gamepad != "auto"sv && input.gamepad != "x360"sv && input.gamepad != "ds4"sv) {

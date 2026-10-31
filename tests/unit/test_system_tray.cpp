@@ -669,6 +669,20 @@ TEST_F(SystemTrayTest, ShowsMacBrokerLicenseAndAvailabilityWithOptionalStartupNo
   system_tray::update_tray_virtualhid_license(license, true);
   EXPECT_EQ(tray_data.notification_title, nullptr);
 }
+
+TEST_F(SystemTrayTest, KeymapDriverSuppressesMacBrokerNotifications) {
+  config::input.gamepad_driver = config::GAMEPAD_DRIVER_KEYMAP;
+  lvh::LicenseStatus license;
+  license.service_available = true;
+  license.state = lvh::LicenseState::unlicensed;
+
+  system_tray::update_tray_virtualhid_license(license, true);
+  const auto &tray_data = system_tray::tray_data_for_testing();
+  EXPECT_EQ(tray_data.notification_title, nullptr);
+
+  system_tray::update_tray_virtualhid_driver(true, "2026.829.2338", false, ">= 2026.1030");  // NOSONAR(cpp:S1313): not an IP address
+  EXPECT_EQ(tray_data.notification_title, nullptr);
+}
   #endif
 
 /**

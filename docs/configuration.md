@@ -352,7 +352,7 @@ consent prompt for directory ACLs, so the Web UI shows setup steps for correctin
             @endcode</td>
     </tr>
     <tr>
-        <td rowspan="4">Choices</td>
+        <td rowspan="5">Choices</td>
         <td>all</td>
         <td>Windows only: prefer Virtual HID Broker when it is available and licensed, with ViGEmBus as a limited fallback.</td>
     </tr>
@@ -367,6 +367,46 @@ consent prompt for directory ACLs, so the Web UI shows setup steps for correctin
     <tr>
         <td>none</td>
         <td>Disable virtual gamepads on Windows and macOS without changing keyboard or mouse input. Suppress broker and driver choice notices.</td>
+    </tr>
+    <tr>
+        <td>keymap</td>
+        <td>macOS and Linux only: translate client gamepads into keyboard keys instead of creating a virtual gamepad.
+            Needs no driver or license. Sticks and triggers become digital key presses. See `gamepad_keymap`.</td>
+    </tr>
+</table>
+
+### gamepad_keymap
+
+<table>
+    <tr>
+        <td>Description</td>
+        <td colspan="2">
+            Overrides for the keys pressed when `gamepad_driver` is `keymap`, as comma-separated `input=key` pairs.
+            Unlisted inputs keep their default key. A stick direction presses its key past half travel and releases
+            it below about three eighths; a trigger presses past half travel.
+            @note{Inputs: `a`, `b`, `x`, `y`, `lb`, `rb`, `lt`, `rt`, `back`, `start`, `home`, `l3`, `r3`,
+            `dpad_up`, `dpad_down`, `dpad_left`, `dpad_right`, `ls_up`, `ls_down`, `ls_left`, `ls_right`, `rs_up`,
+            `rs_down`, `rs_left`, `rs_right`.}
+            @note{Keys: a letter, a digit, `f1`-`f12`, `space`, `enter`, `escape`, `tab`, `backspace`, `shift`,
+            `rshift`, `ctrl`, `rctrl`, `alt`, `ralt`, `up`, `down`, `left`, `right`, a Windows virtual-key code
+            such as `0x5B`, or `none` to unbind.}
+            @note{Defaults: left stick `w`/`a`/`s`/`d`, right stick `i`/`j`/`k`/`l`, D-pad arrows, `a`=space,
+            `b`=f, `x`=1, `y`=2, `lb`=3, `rb`=c, `lt`=q, `rt`=e, `back`=escape, `start`=enter, `l3`=shift.}
+            @note{An application in `apps.json` can set its own `gamepad-keymap` in the same format. While that
+            application streams, it replaces this global value; both apply on top of the defaults.}
+        </td>
+    </tr>
+    <tr>
+        <td>Default</td>
+        <td colspan="2">@code{}
+            not set
+            @endcode</td>
+    </tr>
+    <tr>
+        <td>Example</td>
+        <td colspan="2">@code{}
+            gamepad_keymap = a=x,b=z,start=enter,rs_up=none
+            @endcode</td>
     </tr>
 </table>
 

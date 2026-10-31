@@ -245,7 +245,7 @@
        * Warn about broker or gamepad driver issues when virtual gamepads are enabled.
        */
       virtualInputNotice() {
-        if (!this.controllerEnabled || this.gamepadDriver === 'none') {
+        if (!this.controllerEnabled || this.gamepadDriver === 'none' || this.gamepadDriver === 'keymap') {
           return null;
         }
 

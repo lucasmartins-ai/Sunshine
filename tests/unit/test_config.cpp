@@ -121,6 +121,7 @@ namespace {
       original_config_file_ = config::sunshine.config_file;
       original_gamepad_driver_ = config::input.gamepad_driver;
       original_gamepad_ = config::input.gamepad;
+      original_gamepad_keymap_ = config::input.gamepad_keymap;
       original_apps_file_ = config::stream.file_apps;
       config_file_ = std::filesystem::temp_directory_path() / "sunshine_test_config_persistence.conf";  // NOSONAR(cpp:S5443): safe for tests
       std::filesystem::remove(config_file_);
@@ -135,6 +136,7 @@ namespace {
       config::sunshine.config_file = std::move(original_config_file_);
       config::input.gamepad_driver = std::move(original_gamepad_driver_);
       config::input.gamepad = std::move(original_gamepad_);
+      config::input.gamepad_keymap = std::move(original_gamepad_keymap_);
       config::stream.file_apps = std::move(original_apps_file_);
       std::filesystem::remove(config_file_.parent_path() / "sunshine_test_config_apps.json");
       std::filesystem::remove(config_file_);
@@ -154,6 +156,7 @@ namespace {
     std::string original_config_file_;  ///< Active configuration path restored after each test.
     std::string original_gamepad_driver_;  ///< Gamepad driver preference restored after each test.
     std::string original_gamepad_;  ///< Gamepad profile restored after each test.
+    std::string original_gamepad_keymap_;  ///< Gamepad keymap overrides restored after each test.
     std::string original_apps_file_;  ///< Applications file path restored after each test.
   };
 
@@ -206,6 +209,23 @@ TEST_F(ConfigPersistenceTest, AcceptsAllGamepadProfilesAcrossRepeatedConfigurati
     config::apply_config_for_test(std::string {"gamepad = "} + std::string {profile} + "\n");
     EXPECT_EQ(config::input.gamepad, profile);
   }
+}
+
+TEST_F(ConfigPersistenceTest, ParsesKeymapDriverAndFallsBackFromAnInvalidKeymap) {
+  const auto apps_file = config_file().parent_path() / "sunshine_test_config_apps.json";
+  ASSERT_EQ(file_handler::write_file(apps_file.string().c_str(), "{}"), 0);
+  config::stream.file_apps = apps_file.string();
+
+  config::apply_config_for_test("gamepad_driver = keymap\ngamepad_keymap = a=x,b=z\n");
+#ifdef _WIN32
+  EXPECT_NE(config::input.gamepad_driver, config::GAMEPAD_DRIVER_KEYMAP);
+#else
+  EXPECT_EQ(config::input.gamepad_driver, config::GAMEPAD_DRIVER_KEYMAP);
+#endif
+  EXPECT_EQ(config::input.gamepad_keymap, "a=x,b=z");
+
+  config::apply_config_for_test("gamepad_keymap = a=nokey\n");
+  EXPECT_TRUE(config::input.gamepad_keymap.empty());
 }
 
 TEST_F(ConfigPersistenceTest, ParsesFp16SdrGammaEncodedOption) {

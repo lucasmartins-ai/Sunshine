@@ -650,7 +650,7 @@
         },
 
         showVirtualhid() {
-          return this.gamepadDriver !== 'none' && (this.platform === 'macos' || this.gamepadDriver !== 'vigembus');
+          return this.gamepadDriver !== 'none' && this.gamepadDriver !== 'keymap' && (this.platform === 'macos' || this.gamepadDriver !== 'vigembus');
         },
 
         showVigembus() {
@@ -664,6 +664,9 @@
         virtualInputDescriptionKey() {
           if (this.gamepadDriver === 'none') {
             return 'troubleshooting.virtual_gamepad_none_desc';
+          }
+          if (this.gamepadDriver === 'keymap') {
+            return 'troubleshooting.virtual_gamepad_keymap_desc';
           }
           if (this.platform === 'macos') {
             return 'troubleshooting.virtual_gamepad_macos_desc';

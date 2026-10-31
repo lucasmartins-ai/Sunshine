@@ -642,3 +642,12 @@ TEST_F(InputGamepadSessionTest, RetargetsRelativeMouseFromLatestStreamGeometry) 
   EXPECT_EQ(mouse_event.y, 9);
   EXPECT_EQ(context().mouse_viewport.offset_x, 0);
 }
+
+TEST(InputGamepadProbeTest, KeymapDriverReportsGamepadInputAsAvailable) {
+  const auto original_gamepad_driver = config::input.gamepad_driver;
+  config::input.gamepad_driver = config::GAMEPAD_DRIVER_KEYMAP;
+
+  EXPECT_FALSE(input::probe_gamepads());
+
+  config::input.gamepad_driver = original_gamepad_driver;
+}

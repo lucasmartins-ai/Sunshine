@@ -16,6 +16,7 @@
 #include <boost/process/v1.hpp>
 
 // local includes
+#include <src/platform/gamepad_keymap.h>
 #include <src/process.h>
 #include <src/utility.h>
 
@@ -711,4 +712,50 @@ TEST_F(ProcessRefreshTest, FileTimeType_DefaultValueComparison) {
   // The actual correctness is verified by Refresh_ParsesFileOnFirstCall above —
   // if that test passes, the optional fix works regardless of platform behavior.
   SUCCEED();
+}
+
+TEST_F(ProcessRefreshTest, ParsesValidAppGamepadKeymapAndDropsAnInvalidOne) {
+  const auto apps_file = test_dir / "apps.json";
+  std::ofstream file(apps_file);
+  file << R"({ "env": {}, "apps": [ { "name": "Game", "gamepad-keymap": "a=j,b=k" }, { "name": "Broken", "gamepad-keymap": "a=nokey" }, { "name": "Plain" } ] })";
+  file.close();
+
+  const auto parsed = proc::parse(apps_file.string());
+  ASSERT_TRUE(parsed);
+  const auto &apps = parsed->get_apps();
+  ASSERT_EQ(apps.size(), 3);
+  EXPECT_EQ(apps[0].gamepad_keymap, "a=j,b=k");
+  EXPECT_TRUE(apps[1].gamepad_keymap.empty()) << "an invalid keymap falls back to the global one";
+  EXPECT_TRUE(apps[2].gamepad_keymap.empty());
+}
+
+TEST_F(ProcessRefreshTest, StreamedApplicationKeymapIsActiveUntilTermination) {
+  auto saved = std::move(proc::proc);
+
+  boost::process::v1::environment env = boost::this_process::environment();
+  std::vector<proc::ctx_t> apps;
+  proc::ctx_t ctx;
+  ctx.name = "Keymap game";
+  ctx.id = "7";
+  ctx.gamepad_keymap = "a=j";
+  apps.push_back(std::move(ctx));
+  proc::proc_t target(std::move(env), std::move(apps));
+  proc::proc = std::move(target);
+
+  auto launch_session = std::make_shared<rtsp_stream::launch_session_t>();
+  launch_session->width = 1920;
+  launch_session->height = 1080;
+  launch_session->fps = 60;
+  launch_session->gcmap = 0;
+  launch_session->enable_hdr = false;
+  launch_session->host_audio = false;
+  launch_session->enable_sops = false;
+  launch_session->surround_info = 2;
+  ASSERT_EQ(proc::proc.execute(7, launch_session), 0);
+  EXPECT_EQ(platf::keymap::active_keymap_spec("b=k"), "a=j");
+
+  proc::proc.terminate();
+  EXPECT_EQ(platf::keymap::active_keymap_spec("b=k"), "b=k");
+
+  proc::proc = std::move(saved);
 }

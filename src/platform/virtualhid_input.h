@@ -17,6 +17,7 @@
 
 // local includes
 #include "src/platform/common.h"
+#include "src/platform/gamepad_keymap.h"
 
 namespace platf::virtualhid {
 
@@ -67,6 +68,8 @@ namespace platf::virtualhid {
     lvh::PointerViewport mouse_desktop;  ///< Virtual-desktop bounds used to create the shared mouse.
     lvh::PointerViewport mouse_viewport;  ///< Streamed display bounds used to create the shared mouse.
     std::vector<std::shared_ptr<struct gamepad_context_t>> gamepads {static_cast<std::size_t>(MAX_GAMEPADS)};  ///< Virtual gamepad slots.
+    std::array<std::optional<keymap::mapper_t>, MAX_GAMEPADS> keymap_gamepads;  ///< Gamepads translated into keyboard keys when gamepad_driver is keymap.
+    std::array<std::uint8_t, 256> keymap_key_owners {};  ///< Keymap gamepads holding each key, so a key shared by two gamepads stays down until both release.
   };
 
   /**

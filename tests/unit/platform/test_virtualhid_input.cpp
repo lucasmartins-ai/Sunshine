@@ -1123,3 +1123,58 @@ TEST_F(VirtualHidDeviceTest, PlatformWrappersForwardToVirtualHidContext) {
   platf::pen_update(platform_client.get(), viewport, {LI_TOUCH_EVENT_HOVER, LI_TOOL_TYPE_PEN, 0, LI_TILT_UNKNOWN, LI_ROT_UNKNOWN, 0.25F, 0.5F, 0.5F, 0.0F, 0.0F});
   EXPECT_EQ(platform_client_context.pen->last_submitted_tool().tool, lvh::PenToolType::pen);
 }
+
+TEST_F(VirtualHidDeviceTest, KeymapDriverTranslatesGamepadStateIntoKeyboardKeys) {
+  config::input.gamepad_driver = config::GAMEPAD_DRIVER_KEYMAP;
+  config::input.gamepad_keymap = "a=x";
+  const platf::gamepad_id_t id {2, 0};
+
+  ASSERT_EQ(platf::virtualhid::alloc_gamepad(*context(), id, {}, feedback_queue()), 0);
+  EXPECT_EQ(platf::virtualhid::gamepad_adapter_for_testing(*context(), id.globalIndex), nullptr) << "no virtual device is created";
+
+  platf::virtualhid::gamepad_update(*context(), id.globalIndex, {A_FLAG, 0, 0, 0, 0, 0, 0});
+  auto event = context()->keyboard->last_submitted_event();
+  EXPECT_EQ(event.key_code, 'X');
+  EXPECT_TRUE(event.pressed);
+
+  platf::virtualhid::gamepad_update(*context(), id.globalIndex, {0, 0, 0, 0, 32767, 0, 0});
+  event = context()->keyboard->last_submitted_event();
+  EXPECT_EQ(event.key_code, 'W');
+  EXPECT_TRUE(event.pressed);
+
+  EXPECT_EQ(platf::virtualhid::rebind_gamepad(*context(), id, feedback_queue()), 0);
+
+  platf::virtualhid::free_gamepad(*context(), id.globalIndex);
+  event = context()->keyboard->last_submitted_event();
+  EXPECT_EQ(event.key_code, 'W');
+  EXPECT_FALSE(event.pressed) << "freeing the gamepad releases held keys";
+
+  platf::virtualhid::gamepad_update(*context(), id.globalIndex, {A_FLAG, 0, 0, 0, 0, 0, 0});
+  EXPECT_EQ(context()->keyboard->last_submitted_event().key_code, 'W') << "a freed slot ignores updates";
+  EXPECT_EQ(platf::virtualhid::rebind_gamepad(*context(), id, feedback_queue()), -1);
+}
+
+TEST_F(VirtualHidDeviceTest, KeymapDriverRejectsOutOfRangeSlots) {
+  config::input.gamepad_driver = config::GAMEPAD_DRIVER_KEYMAP;
+
+  EXPECT_EQ(platf::virtualhid::alloc_gamepad(*context(), {platf::MAX_GAMEPADS, 0}, {}, feedback_queue()), -1);
+  EXPECT_EQ(platf::virtualhid::alloc_gamepad(*context(), {-1, 0}, {}, feedback_queue()), -1);
+}
+
+TEST_F(VirtualHidDeviceTest, KeymapKeySharedByTwoGamepadsStaysDownUntilBothRelease) {
+  config::input.gamepad_driver = config::GAMEPAD_DRIVER_KEYMAP;
+  ASSERT_EQ(platf::virtualhid::alloc_gamepad(*context(), {0, 0}, {}, feedback_queue()), 0);
+  ASSERT_EQ(platf::virtualhid::alloc_gamepad(*context(), {1, 1}, {}, feedback_queue()), 0);
+
+  platf::virtualhid::gamepad_update(*context(), 0, {0, 0, 0, 0, 32767, 0, 0});
+  platf::virtualhid::gamepad_update(*context(), 1, {0, 0, 0, 0, 32767, 0, 0});
+  EXPECT_EQ(context()->keyboard->last_submitted_event().key_code, 'W');
+  EXPECT_TRUE(context()->keyboard->last_submitted_event().pressed);
+
+  platf::virtualhid::free_gamepad(*context(), 0);
+  EXPECT_TRUE(context()->keyboard->last_submitted_event().pressed) << "the second gamepad still holds W";
+
+  platf::virtualhid::gamepad_update(*context(), 1, {});
+  EXPECT_EQ(context()->keyboard->last_submitted_event().key_code, 'W');
+  EXPECT_FALSE(context()->keyboard->last_submitted_event().pressed);
+}

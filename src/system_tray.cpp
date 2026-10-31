@@ -519,7 +519,7 @@ namespace system_tray {
       };
     }
     #else
-    if (config::input.controller && config::input.gamepad_driver != config::GAMEPAD_DRIVER_NONE && notify_if_unlicensed && !license.licensed()) {
+    if (config::input.controller && config::input.gamepad_driver != config::GAMEPAD_DRIVER_NONE && config::input.gamepad_driver != config::GAMEPAD_DRIVER_KEYMAP && notify_if_unlicensed && !license.licensed()) {
       if (license.service_available) {
         tray.notification_title = "Virtual HID Broker License";
         tray.notification_text = "Activate a machine license to use virtual gamepads. Click to manage the license.";
@@ -553,7 +553,7 @@ namespace system_tray {
     const bool version_compatible,
     const std::string_view supported_versions
   ) {
-    if (config::input.gamepad_driver == config::GAMEPAD_DRIVER_NONE || !installed || version_compatible) {
+    if (config::input.gamepad_driver == config::GAMEPAD_DRIVER_NONE || config::input.gamepad_driver == config::GAMEPAD_DRIVER_KEYMAP || !installed || version_compatible) {
       return;
     }
     #ifdef _WIN32

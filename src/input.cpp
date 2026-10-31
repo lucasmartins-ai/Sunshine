@@ -2406,6 +2406,9 @@ namespace input {
    * @brief Probe connected gamepads and update input capability state.
    */
   bool probe_gamepads() {
+    if (config::input.gamepad_driver == config::GAMEPAD_DRIVER_KEYMAP) {
+      return false;
+    }
     const auto &gamepads = platf::supported_gamepads(std::addressof(platf_input));
     return std::ranges::none_of(gamepads, [](const auto &gamepad) {
       return gamepad.is_enabled && gamepad.name != "auto";

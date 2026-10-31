@@ -130,14 +130,23 @@ watch(
         <option v-if="platform === 'windows'" value="" disabled>{{ $t('config.gamepad_driver_select') }}</option>
         <option v-if="platform === 'windows'" value="all">{{ $t('config.gamepad_driver_all') }}</option>
         <option value="virtualhid">{{ $t('config.gamepad_driver_virtualhid') }}</option>
+        <option v-if="platform === 'macos'" value="keymap">{{ $t('config.gamepad_driver_keymap') }}</option>
         <option v-if="platform === 'windows'" value="vigembus">{{ $t('config.gamepad_driver_vigembus') }}</option>
         <option value="none">{{ $t('config.gamepad_driver_none') }}</option>
       </select>
       <div class="form-text">{{ $t(platform === 'macos' ? 'config.gamepad_driver_macos_desc' : 'config.gamepad_driver_desc') }}</div>
     </div>
 
+    <!-- Keyboard keys pressed by a keymap gamepad -->
+    <div class="mb-3" v-if="config.controller === 'enabled' && config.gamepad_driver === 'keymap'">
+      <label for="gamepad_keymap" class="form-label">{{ $t('config.gamepad_keymap') }}</label>
+      <input type="text" class="form-control" id="gamepad_keymap" placeholder="a=space,b=f,ls_up=w"
+             v-model="config.gamepad_keymap" />
+      <div class="form-text">{{ $t('config.gamepad_keymap_desc') }}</div>
+    </div>
+
     <!-- Emulated Gamepad Type -->
-    <div class="mb-3" v-if="config.controller === 'enabled' && config.gamepad_driver !== 'none'">
+    <div class="mb-3" v-if="config.controller === 'enabled' && config.gamepad_driver !== 'none' && config.gamepad_driver !== 'keymap'">
       <label for="gamepad" class="form-label">{{ $t('config.gamepad') }}</label>
       <select id="gamepad" class="form-select" v-model="config.gamepad">
         <option value="auto">{{ $t('_common.auto') }}</option>
@@ -154,7 +163,7 @@ watch(
     </div>
 
     <!-- Additional options based on gamepad type -->
-    <template v-if="config.controller === 'enabled' && config.gamepad_driver !== 'none'">
+    <template v-if="config.controller === 'enabled' && config.gamepad_driver !== 'none' && config.gamepad_driver !== 'keymap'">
       <template v-if="config.gamepad === 'ds4' || config.gamepad === 'ds5' || config.gamepad === 'auto'">
         <div class="mb-3 accordion">
           <div class="accordion-item">

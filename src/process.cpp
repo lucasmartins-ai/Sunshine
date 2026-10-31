@@ -32,6 +32,7 @@
 #include "input.h"
 #include "logging.h"
 #include "platform/common.h"
+#include "platform/gamepad_keymap.h"
 #include "process.h"
 #include "system_tray.h"
 #include "utility.h"
@@ -193,6 +194,7 @@ namespace proc {
 
     _app_id = app_id;
     _app = *iter;
+    platf::keymap::set_app_keymap(_app.gamepad_keymap);
     _app_prep_begin = std::begin(_app.prep_cmds);
     _app_prep_it = _app_prep_begin;
 
@@ -353,6 +355,7 @@ namespace proc {
 
   void proc_t::terminate() {
     input::terminate_gamepads();
+    platf::keymap::set_app_keymap({});
     std::error_code ec;
     placebo = false;
     terminate_process_group(_process, _process_group, _app.exit_timeout);
@@ -744,6 +747,7 @@ namespace proc {
         auto auto_detach = app_node.get_optional<bool>("auto-detach"s);
         auto wait_all = app_node.get_optional<bool>("wait-all"s);
         auto exit_timeout = app_node.get_optional<int>("exit-timeout"s);
+        auto gamepad_keymap = app_node.get_optional<std::string>("gamepad-keymap"s);
 
         std::vector<proc::cmd_t> prep_cmds;
         if (!exclude_global_prep.value_or(false)) {
@@ -813,6 +817,12 @@ namespace proc {
         ctx.auto_detach = auto_detach.value_or(true);
         ctx.wait_all = wait_all.value_or(true);
         ctx.exit_timeout = std::chrono::seconds {exit_timeout.value_or(5)};
+
+        if (gamepad_keymap && platf::keymap::parse_keymap(*gamepad_keymap)) {
+          ctx.gamepad_keymap = *gamepad_keymap;
+        } else if (gamepad_keymap) {
+          BOOST_LOG(warning) << "Invalid gamepad-keymap for app '"sv << name << "'; using the global keymap"sv;
+        }
 
         auto possible_ids = calculate_app_id(name, ctx.image_path, i++);
         if (ids.count(std::get<0>(possible_ids)) == 0) {

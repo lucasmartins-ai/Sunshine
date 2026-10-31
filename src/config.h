@@ -43,6 +43,7 @@ namespace config {
   inline constexpr std::string_view GAMEPAD_DRIVER_VIRTUALHID = "virtualhid";  ///< Use Virtual HID Broker for gamepads on Windows or macOS.
   inline constexpr std::string_view GAMEPAD_DRIVER_VIGEMBUS = "vigembus";  ///< Allow only ViGEmBus for Windows gamepads.
   inline constexpr std::string_view GAMEPAD_DRIVER_NONE = "none";  ///< Disable virtual gamepads on Windows and macOS.
+  inline constexpr std::string_view GAMEPAD_DRIVER_KEYMAP = "keymap";  ///< Translate client gamepads into keyboard keys on macOS and Linux, without a virtual device.
 
   // track modified config options
   inline config_map_t modified_config_settings;  ///< Configuration keys changed during the current parse or UI update.
@@ -304,6 +305,7 @@ namespace config {
 
     std::string gamepad;  ///< Virtual controller profile selected by configuration.
     std::string gamepad_driver;  ///< Virtual gamepad backend policy on Windows and macOS.
+    std::string gamepad_keymap;  ///< `input=key` overrides applied to the default bindings when gamepad_driver is keymap.
     bool ds4_back_as_touchpad_click;  ///< Map Back/Select to touchpad click for PlayStation-style gamepads.
     bool motion_as_ds4;  ///< Prefer PlayStation-style emulation for client gamepads with motion controls.
     bool touchpad_as_ds4;  ///< Prefer PlayStation-style emulation for client gamepads with touchpad input.

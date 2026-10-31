@@ -302,6 +302,13 @@
                      v-model="editForm['exit-timeout']" min="0" placeholder="5" />
               <div id="exitTimeoutHelp" class="form-text">{{ $t('apps.exit_timeout_desc') }}</div>
             </div>
+            <!-- gamepad keymap -->
+            <div class="mb-3">
+              <label for="appGamepadKeymap" class="form-label">{{ $t('apps.gamepad_keymap') }}</label>
+              <input type="text" class="form-control monospace" id="appGamepadKeymap" aria-describedby="appGamepadKeymapHelp"
+                     v-model="editForm['gamepad-keymap']" placeholder="a=j,b=k,x=u,y=i" />
+              <div id="appGamepadKeymapHelp" class="form-text">{{ $t('apps.gamepad_keymap_desc') }}</div>
+            </div>
             <div class="mb-3">
               <label for="appImagePath" class="form-label">{{ $t('apps.image') }}</label>
               <div class="input-group">
